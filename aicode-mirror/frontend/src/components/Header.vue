@@ -5,7 +5,7 @@
         <div class="nav-brand">
           <router-link to="/" class="logo">
             <span class="logo-icon">🔮</span>
-            <span class="logo-text">AI代码镜像</span>
+            <span class="logo-text">CC-Codex</span>
           </router-link>
         </div>
 
