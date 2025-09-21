@@ -1,6 +1,6 @@
 # AI代码镜像 - AI Code Mirror
 
-一个模仿 [aicodemirror.com](https://www.aicodemirror.com/) 设计的完整AI编程平台，使用Vue.js + Node.js构建。
+一个完整AI编程平台，使用Vue.js + Node.js构建。
 
 ## 🌟 功能特性
 
