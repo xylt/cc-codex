@@ -54,6 +54,22 @@
     <div class="dashboard-content">
       <div class="container">
         <div class="dashboard-grid">
+          <!-- 售后服务 Module -->
+          <div class="support-section">
+            <div class="support-card">
+              <div class="support-icon">💬</div>
+              <div class="support-content">
+                <h3>售后服务</h3>
+                <p class="support-text">如有任何问题，请添加客服微信</p>
+                <div class="wechat-info">
+                  <span class="wechat-label">微信号：</span>
+                  <span class="wechat-id">aicode-support</span>
+                  <button class="copy-wechat-btn" @click="copyWechatId">复制</button>
+                </div>
+              </div>
+            </div>
+          </div>
+
           <!-- 当前积分 Module -->
           <div class="credits-section">
             <div class="section-title">
@@ -241,18 +257,12 @@
             </div>
 
             <div class="payment-methods">
-              <h4>选择支付方式</h4>
+              <h4>支付方式</h4>
               <div class="payment-options">
-                <label class="payment-option" :class="{ active: paymentMethod === 'alipay' }">
-                  <input type="radio" v-model="paymentMethod" value="alipay">
+                <div class="payment-option active">
                   <span class="payment-icon">💳</span>
-                  <span class="payment-name">支付宝</span>
-                </label>
-                <label class="payment-option" :class="{ active: paymentMethod === 'wechat' }">
-                  <input type="radio" v-model="paymentMethod" value="wechat">
-                  <span class="payment-icon">💚</span>
-                  <span class="payment-name">微信支付</span>
-                </label>
+                  <span class="payment-name">支付宝支付</span>
+                </div>
               </div>
             </div>
 
@@ -260,7 +270,7 @@
               <h4>请扫码支付</h4>
               <div class="qr-code-container">
                 <img :src="qrCodeUrl" alt="支付二维码" class="qr-code">
-                <p class="qr-hint">使用{{ paymentMethod === 'alipay' ? '支付宝' : '微信' }}扫描二维码完成支付</p>
+                <p class="qr-hint">使用支付宝扫描二维码完成支付</p>
               </div>
               <div class="payment-status">
                 <div v-if="paymentStatus === 'pending'" class="status-pending">
@@ -284,7 +294,7 @@
           <button class="btn btn-secondary" @click="closePaymentModal">
             取消
           </button>
-          <button v-if="!qrCodeUrl" class="btn btn-primary" @click="generatePaymentQRCode" :disabled="!paymentMethod">
+          <button v-if="!qrCodeUrl" class="btn btn-primary" @click="generatePaymentQRCode">
             生成支付二维码
           </button>
         </div>
@@ -401,7 +411,8 @@ export default {
       paymentMethod: 'alipay',
       qrCodeUrl: null,
       paymentStatus: null, // pending, success, failed
-      paymentCheckInterval: null
+      paymentCheckInterval: null,
+      orderId: null
     }
   },
   mounted() {
@@ -538,6 +549,15 @@ export default {
       })
     },
 
+    copyWechatId() {
+      const wechatId = 'aicode-support'
+      navigator.clipboard.writeText(wechatId).then(() => {
+        alert('微信号已复制到剪贴板')
+      }).catch(() => {
+        alert('复制失败，请手动复制：' + wechatId)
+      })
+    },
+
     editApiKey(key) {
       this.editingKey = key
       this.keyForm = {
@@ -617,6 +637,7 @@ export default {
       this.qrCodeUrl = null
       this.paymentStatus = null
       this.paymentMethod = 'alipay'
+      this.orderId = null
       if (this.paymentCheckInterval) {
         clearInterval(this.paymentCheckInterval)
         this.paymentCheckInterval = null
@@ -624,69 +645,144 @@ export default {
     },
 
     async generatePaymentQRCode() {
-      if (!this.paymentMethod) {
-        alert('请选择支付方式')
-        return
-      }
-
       try {
-        // 模拟生成支付二维码
-        // 实际项目中，这里应该调用后端 API
-        const amount = this.selectedPlan === 'plus' ? 99 : 199
+        console.log('发起支付请求...', {
+          userId: this.user.id || 'demo-user-id',
+          plan: this.selectedPlan,
+          paymentMethod: 'alipay'
+        })
 
-        // 这里应该调用真实的支付接口
-        // const response = await fetch('/api/payment/create', {
-        //   method: 'POST',
-        //   headers: { 'Content-Type': 'application/json' },
-        //   body: JSON.stringify({
-        //     plan: this.selectedPlan,
-        //     method: this.paymentMethod,
-        //     amount: amount
-        //   })
-        // })
-        // const data = await response.json()
-        // this.qrCodeUrl = data.qrCodeUrl
+        // 调用后端 API 创建支付订单
+        const response = await fetch('/api/payment/create', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
+          },
+          body: JSON.stringify({
+            userId: this.user.id || 'demo-user-id', // 从登录信息获取用户ID
+            plan: this.selectedPlan,
+            paymentMethod: 'alipay'
+          })
+        })
 
-        // 模拟二维码（演示用）
-        // 实际应用中应该从后端获取真实的支付二维码
-        this.qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(`${this.paymentMethod}://pay?amount=${amount}&plan=${this.selectedPlan}`)}`
-        this.paymentStatus = 'pending'
+        console.log('收到响应:', response.status, response.statusText)
 
-        // 开始轮询支付状态
-        this.startPaymentStatusCheck()
+        // 检查响应状态
+        if (!response.ok) {
+          const text = await response.text()
+          console.error('HTTP Error:', response.status, text)
+          throw new Error(`HTTP Error: ${response.status} - ${text}`)
+        }
+
+        const contentType = response.headers.get('content-type')
+        console.log('Content-Type:', contentType)
+
+        let data
+        if (contentType && contentType.includes('application/json')) {
+          data = await response.json()
+        } else {
+          const text = await response.text()
+          console.log('Non-JSON response:', text)
+          if (text) {
+            data = JSON.parse(text)
+          } else {
+            throw new Error('Empty response from server')
+          }
+        }
+
+        console.log('解析后的数据:', data)
+
+        if (data.success) {
+          this.qrCodeUrl = data.data.qrCodeUrl
+          this.orderId = data.data.orderId
+          this.paymentStatus = 'pending'
+
+          console.log('支付订单已创建:', this.orderId)
+
+          // 开始轮询支付状态
+          this.startPaymentStatusCheck()
+        } else {
+          throw new Error(data.message || '创建支付订单失败')
+        }
       } catch (error) {
         console.error('生成支付二维码失败:', error)
-        alert('生成支付二维码失败，请稍后重试')
+        alert('生成支付二维码失败: ' + error.message)
       }
     },
 
     startPaymentStatusCheck() {
-      // 模拟支付状态检查
-      // 实际项目中应该调用后端 API 检查支付状态
+      // 轮询检查支付状态
       this.paymentCheckInterval = setInterval(async () => {
         try {
-          // const response = await fetch('/api/payment/check', {
-          //   method: 'POST',
-          //   headers: { 'Content-Type': 'application/json' },
-          //   body: JSON.stringify({ orderId: this.orderId })
-          // })
-          // const data = await response.json()
-          // if (data.status === 'success') {
-          //   this.paymentStatus = 'success'
-          //   clearInterval(this.paymentCheckInterval)
-          //   setTimeout(() => {
-          //     this.closePaymentModal()
-          //     this.currentPlan.type = this.selectedPlan
-          //     alert('支付成功！您的套餐已升级')
-          //   }, 2000)
-          // }
+          const response = await fetch('/api/payment/check', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ orderId: this.orderId })
+          })
 
-          // 模拟支付成功（仅用于演示）
-          // 实际应用中需要真实的支付回调
+          const data = await response.json()
+
+          if (data.success && data.data.status === 'success') {
+            this.paymentStatus = 'success'
+            clearInterval(this.paymentCheckInterval)
+
+            // 调用支付成功回调
+            await this.handlePaymentSuccess()
+
+            setTimeout(() => {
+              this.closePaymentModal()
+              this.currentPlan.type = this.selectedPlan
+              alert('支付成功！您的套餐已升级，API Key 已生成')
+              // 刷新页面数据
+              this.loadUserData()
+            }, 2000)
+          } else if (data.data.status === 'failed') {
+            this.paymentStatus = 'failed'
+            clearInterval(this.paymentCheckInterval)
+          }
         } catch (error) {
           console.error('检查支付状态失败:', error)
         }
       }, 3000)
+    },
+
+    async handlePaymentSuccess() {
+      try {
+        const response = await fetch('/api/payment/success', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            userId: this.user.id || 'demo-user-id',
+            plan: this.selectedPlan,
+            orderId: this.orderId,
+            paymentMethod: 'alipay'
+          })
+        })
+
+        const data = await response.json()
+
+        if (data.success) {
+          // 更新用户的 API Key
+          console.log('API Key generated:', data.data.apiKey)
+          // 这里可以将新的 API Key 添加到 apiKeys 列表中
+          if (data.data.apiKey) {
+            const newKey = {
+              id: Date.now(),
+              name: `auto-key-${this.user.name}`,
+              value: data.data.apiKey,
+              masked: data.data.apiKey.substring(0, 8) + '...' + data.data.apiKey.substring(data.data.apiKey.length - 5),
+              createdAt: Date.now(),
+              lastUsed: null
+            }
+            this.apiKeys.push(newKey)
+          }
+        } else {
+          console.error('处理支付成功回调失败:', data.message)
+        }
+      } catch (error) {
+        console.error('处理支付成功回调失败:', error)
+      }
     }
   }
 }
@@ -890,6 +986,91 @@ export default {
   font-style: normal;
   color: #666;
   font-weight: bold;
+}
+
+/* Support Section */
+.support-section {
+  background: linear-gradient(135deg, #fff9f0 0%, #ffe8d0 100%);
+  padding: 2rem;
+  border-radius: 12px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+  margin-bottom: 2rem;
+}
+
+.support-card {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  background: white;
+  padding: 1.5rem;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.support-icon {
+  font-size: 3rem;
+  flex-shrink: 0;
+}
+
+.support-content {
+  flex: 1;
+}
+
+.support-content h3 {
+  color: #2C1810;
+  margin: 0 0 0.5rem 0;
+  font-size: 1.3rem;
+  font-weight: 600;
+}
+
+.support-text {
+  color: #666;
+  margin: 0 0 1rem 0;
+  font-size: 0.95rem;
+}
+
+.wechat-info {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  background: #f8f9fa;
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+  border: 1px solid #e9ecef;
+}
+
+.wechat-label {
+  color: #666;
+  font-size: 0.9rem;
+}
+
+.wechat-id {
+  color: #2C1810;
+  font-weight: 600;
+  font-size: 1.1rem;
+  font-family: 'Monaco', 'Menlo', monospace;
+}
+
+.copy-wechat-btn {
+  background: #D2691E;
+  color: white;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.85rem;
+  font-weight: 600;
+  transition: all 0.3s ease;
+  margin-left: auto;
+}
+
+.copy-wechat-btn:hover {
+  background: #B8860B;
+  transform: scale(1.05);
+}
+
+.copy-wechat-btn:active {
+  transform: scale(0.95);
 }
 
 /* Credits Section */
@@ -1380,6 +1561,21 @@ export default {
     gap: 1.5rem;
   }
 
+  .support-card {
+    flex-direction: column;
+    text-align: center;
+  }
+
+  .wechat-info {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .copy-wechat-btn {
+    margin-left: 0;
+    width: 100%;
+  }
+
   .plan-card {
     min-height: auto;
   }
@@ -1531,26 +1727,10 @@ export default {
   align-items: center;
   justify-content: center;
   padding: 1.5rem 1rem;
-  border: 2px solid #e9ecef;
+  border: 2px solid #D2691E;
   border-radius: 12px;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  background: white;
-}
-
-.payment-option:hover {
-  border-color: #D2691E;
-  background: #faf8f5;
-}
-
-.payment-option.active {
-  border-color: #D2691E;
   background: #faf8f5;
   box-shadow: 0 4px 12px rgba(210, 105, 30, 0.15);
-}
-
-.payment-option input {
-  display: none;
 }
 
 .payment-icon {
@@ -1650,10 +1830,6 @@ export default {
 }
 
 @media (max-width: 768px) {
-  .payment-options {
-    flex-direction: column;
-  }
-
   .payment-option {
     padding: 1.25rem;
   }

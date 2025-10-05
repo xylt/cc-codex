@@ -11,6 +11,7 @@ import authRoutes from './src/routes/auth.js'
 import userRoutes from './src/routes/users.js'
 import apiKeyRoutes from './src/routes/apiKeys.js'
 import statsRoutes from './src/routes/stats.js'
+import paymentRoutes from './src/routes/payment.js'
 
 // Import middleware
 import { errorHandler } from './src/middleware/errorHandler.js'
@@ -70,6 +71,7 @@ app.use('/api/auth', authRoutes)
 app.use('/api/users', userRoutes)
 app.use('/api/api-keys', apiKeyRoutes)
 app.use('/api/stats', statsRoutes)
+app.use('/api/payment', paymentRoutes)
 
 // Root endpoint
 app.get('/', (req, res) => {

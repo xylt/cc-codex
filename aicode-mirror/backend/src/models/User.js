@@ -25,7 +25,7 @@ const userSchema = new mongoose.Schema({
   },
   plan: {
     type: String,
-    enum: ['free', 'pro', 'max', 'ultra'],
+    enum: ['free', 'plus', 'pro', 'max', 'ultra'],
     default: 'free'
   },
   credits: {
@@ -90,7 +90,10 @@ const userSchema = new mongoose.Schema({
     cancelAtPeriodEnd: {
       type: Boolean,
       default: false
-    }
+    },
+    orderId: String,
+    paymentMethod: String,
+    apiKeyId: String
   },
   usage: {
     requests: {
@@ -177,7 +180,8 @@ userSchema.pre('save', function(next) {
   if (this.credits.resetDate && this.credits.resetDate <= new Date()) {
     // Reset credits based on plan
     const planCredits = {
-      free: 1000,
+      free: 3000,
+      plus: 5000,
       pro: 10000,
       max: 50000,
       ultra: 200000
@@ -244,7 +248,8 @@ userSchema.methods.useCredits = function(amount) {
 userSchema.methods.canUseModel = function(model) {
   const modelAccess = {
     free: ['haiku'],
-    pro: ['haiku', 'sonnet'],
+    plus: ['haiku', 'sonnet'],
+    pro: ['haiku', 'sonnet', 'opus'],
     max: ['haiku', 'sonnet', 'opus'],
     ultra: ['haiku', 'sonnet', 'opus']
   }
