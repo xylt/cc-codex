@@ -3,20 +3,48 @@
     <!-- Header Section -->
     <div class="dashboard-header">
       <div class="container">
-        <div class="header-content">
-          <div class="plan-info">
-            <div class="plan-badge" :class="currentPlan.type">
-              {{ currentPlan.name }}
-              <span v-if="currentPlan.type === 'free'" class="plan-status">当前订阅</span>
+        <div class="subscription-plans">
+          <!-- FREE Plan -->
+          <div class="plan-card free" :class="{ active: currentPlan.type === 'free' }">
+            <div class="plan-header">
+              <h3 class="plan-name">FREE</h3>
+              <span v-if="currentPlan.type === 'free'" class="current-badge">当前订阅</span>
             </div>
-            <div class="plan-description">
-              {{ currentPlan.description }}
+            <div class="plan-content">
+              <p class="plan-desc">体验 Claude Code 的基础功能<br>适合轻度使用和初次体验</p>
             </div>
           </div>
-          <div class="upgrade-section" v-if="currentPlan.type === 'free'">
-            <router-link to="/pricing" class="btn btn-upgrade">
-              立即升级
-            </router-link>
+
+          <!-- PLUS Plan -->
+          <div class="plan-card plus" :class="{ active: currentPlan.type === 'plus' }">
+            <div class="plan-header-row">
+              <div class="plan-left">
+                <h3 class="plan-name">PLUS</h3>
+                <span v-if="currentPlan.type === 'plus'" class="current-badge-inline">当前订阅</span>
+                <p class="plan-desc">支持每日基础体验，轻度使用</p>
+              </div>
+              <div class="plan-right">
+                <router-link v-if="currentPlan.type !== 'plus'" to="/pricing" class="upgrade-btn">
+                  立即升级
+                </router-link>
+              </div>
+            </div>
+          </div>
+
+          <!-- PRO Plan -->
+          <div class="plan-card pro" :class="{ active: currentPlan.type === 'pro' }">
+            <div class="plan-header-row">
+              <div class="plan-left">
+                <h3 class="plan-name">PRO</h3>
+                <span v-if="currentPlan.type === 'pro'" class="current-badge-inline">当前订阅</span>
+                <p class="plan-desc">畅享 Claude 4.5 Sonnet 模型，满足日常开发</p>
+              </div>
+              <div class="plan-right">
+                <router-link v-if="currentPlan.type !== 'pro'" to="/pricing" class="upgrade-btn">
+                  立即升级
+                </router-link>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -500,71 +528,155 @@ export default {
 }
 
 .dashboard-header {
-  background: white;
-  border-bottom: 1px solid #e1e5e9;
-  padding: 2rem 0;
+  background: #f5f5f5;
+  padding: 2rem 0 3rem;
 }
 
-.header-content {
+.subscription-plans {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 2rem;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.plan-card {
+  background: white;
+  border-radius: 16px;
+  padding: 1.5rem 1.5rem;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+  transition: all 0.3s ease;
+  position: relative;
+  min-height: 160px;
+  display: flex;
+  flex-direction: column;
+}
+
+.plan-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
+}
+
+.plan-card.active {
+  border: 2px solid #007aff;
+}
+
+.plan-header {
+  margin-bottom: 1rem;
+  position: relative;
+}
+
+.plan-header-row {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  gap: 1rem;
 }
 
-.plan-info {
+.plan-left {
+  flex: 1;
+}
+
+.plan-right {
+  display: flex;
+  align-items: center;
+}
+
+.plan-name {
+  font-size: 1.6rem;
+  font-weight: 700;
+  margin: 0 0 0.5rem 0;
+  color: #2C1810;
+}
+
+.plan-card.free .plan-name {
+  color: #666;
+}
+
+.plan-card.plus .plan-name {
+  color: #2C1810;
+}
+
+.plan-card.pro .plan-name {
+  color: #2C1810;
+}
+
+.current-badge {
+  display: inline-block;
+  background: #999;
+  color: white;
+  padding: 0.3rem 0.8rem;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  position: absolute;
+  top: 0;
+  right: 0;
+}
+
+.current-badge-inline {
+  display: inline-block;
+  background: #999;
+  color: white;
+  padding: 0.25rem 0.7rem;
+  border-radius: 12px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  margin-left: 0.5rem;
+  vertical-align: middle;
+}
+
+.plan-card.free .current-badge {
+  background: #999;
+}
+
+.plan-card.plus .current-badge {
+  background: #999;
+}
+
+.plan-card.pro .current-badge {
+  background: #999;
+}
+
+.plan-content {
+  flex: 1;
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  justify-content: space-between;
 }
 
-.plan-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 0.5rem 1rem;
-  border-radius: 20px;
-  font-weight: 600;
-  font-size: 1.1rem;
-}
-
-.plan-badge.free {
-  background: linear-gradient(135deg, #f0f0f0, #e0e0e0);
-  color: #666;
-}
-
-.plan-badge.pro {
-  background: linear-gradient(135deg, #ff6b35, #f7931e);
-  color: white;
-}
-
-.plan-status {
-  background: #666;
-  color: white;
-  padding: 0.2rem 0.6rem;
-  border-radius: 10px;
-  font-size: 0.8rem;
-}
-
-.plan-description {
+.plan-desc {
   color: #666;
   font-size: 0.9rem;
-  max-width: 400px;
+  line-height: 1.6;
+  margin: 0;
 }
 
-.btn-upgrade {
-  background: linear-gradient(135deg, #ff6b35, #f7931e);
+.upgrade-btn {
+  background: #d0d0d0;
   color: white;
-  padding: 0.8rem 2rem;
-  border-radius: 25px;
+  padding: 0.6rem 1.2rem;
+  border-radius: 18px;
   text-decoration: none;
   font-weight: 600;
-  transition: all 0.3s;
-  box-shadow: 0 4px 15px rgba(255, 107, 53, 0.3);
+  font-size: 0.85rem;
+  text-align: center;
+  transition: all 0.3s ease;
+  display: inline-block;
+  align-self: flex-start;
 }
 
-.btn-upgrade:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(255, 107, 53, 0.4);
+.plan-card.plus .upgrade-btn {
+  background: #d0d0d0;
+}
+
+.plan-card.pro .upgrade-btn {
+  background: #e8a87c;
+}
+
+.upgrade-btn:hover {
+  opacity: 0.9;
+  transform: scale(1.05);
 }
 
 .dashboard-content {
@@ -1090,14 +1202,31 @@ export default {
 
 /* Responsive Design */
 @media (max-width: 768px) {
-  .header-content {
-    flex-direction: column;
-    gap: 1rem;
-    text-align: center;
+  .subscription-plans {
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
   }
 
-  .plan-description {
-    text-align: center;
+  .plan-card {
+    min-height: auto;
+  }
+
+  .plan-header-row {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .plan-right {
+    width: 100%;
+  }
+
+  .plan-name {
+    font-size: 1.5rem;
+  }
+
+  .upgrade-btn {
+    align-self: stretch;
+    width: 100%;
   }
 
   .dashboard-grid {
