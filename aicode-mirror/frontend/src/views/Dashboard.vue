@@ -24,9 +24,9 @@
                 <p class="plan-desc">支持每日基础体验，轻度使用</p>
               </div>
               <div class="plan-right">
-                <router-link v-if="currentPlan.type !== 'plus'" to="/pricing" class="upgrade-btn">
+                <button v-if="currentPlan.type !== 'plus'" @click="showPaymentModal('plus')" class="upgrade-btn">
                   立即升级
-                </router-link>
+                </button>
               </div>
             </div>
           </div>
@@ -40,9 +40,9 @@
                 <p class="plan-desc">畅享 Claude 4.5 Sonnet 模型，满足日常开发</p>
               </div>
               <div class="plan-right">
-                <router-link v-if="currentPlan.type !== 'pro'" to="/pricing" class="upgrade-btn">
+                <button v-if="currentPlan.type !== 'pro'" @click="showPaymentModal('pro')" class="upgrade-btn">
                   立即升级
-                </router-link>
+                </button>
               </div>
             </div>
           </div>
@@ -214,6 +214,83 @@
       </div>
     </div>
 
+    <!-- Payment Modal -->
+    <div v-if="showPayment" class="modal-overlay" @click="closePaymentModal">
+      <div class="modal payment-modal" @click.stop>
+        <div class="modal-header">
+          <h3>升级到 {{ selectedPlan === 'plus' ? 'PLUS' : 'PRO' }} 方案</h3>
+          <button class="close-btn" @click="closePaymentModal">×</button>
+        </div>
+
+        <div class="modal-body">
+          <div class="payment-info">
+            <div class="plan-summary">
+              <h4>套餐详情</h4>
+              <div class="summary-item">
+                <span>方案名称：</span>
+                <strong>{{ selectedPlan === 'plus' ? 'PLUS' : 'PRO' }}</strong>
+              </div>
+              <div class="summary-item">
+                <span>价格：</span>
+                <strong class="price">¥{{ selectedPlan === 'plus' ? '99' : '199' }}/月</strong>
+              </div>
+              <div class="summary-item">
+                <span>每日积分：</span>
+                <strong>{{ selectedPlan === 'plus' ? '5000' : '10000' }} 积分</strong>
+              </div>
+            </div>
+
+            <div class="payment-methods">
+              <h4>选择支付方式</h4>
+              <div class="payment-options">
+                <label class="payment-option" :class="{ active: paymentMethod === 'alipay' }">
+                  <input type="radio" v-model="paymentMethod" value="alipay">
+                  <span class="payment-icon">💳</span>
+                  <span class="payment-name">支付宝</span>
+                </label>
+                <label class="payment-option" :class="{ active: paymentMethod === 'wechat' }">
+                  <input type="radio" v-model="paymentMethod" value="wechat">
+                  <span class="payment-icon">💚</span>
+                  <span class="payment-name">微信支付</span>
+                </label>
+              </div>
+            </div>
+
+            <div v-if="qrCodeUrl" class="qr-code-section">
+              <h4>请扫码支付</h4>
+              <div class="qr-code-container">
+                <img :src="qrCodeUrl" alt="支付二维码" class="qr-code">
+                <p class="qr-hint">使用{{ paymentMethod === 'alipay' ? '支付宝' : '微信' }}扫描二维码完成支付</p>
+              </div>
+              <div class="payment-status">
+                <div v-if="paymentStatus === 'pending'" class="status-pending">
+                  <div class="spinner"></div>
+                  <span>等待支付中...</span>
+                </div>
+                <div v-else-if="paymentStatus === 'success'" class="status-success">
+                  <span class="status-icon">✅</span>
+                  <span>支付成功！</span>
+                </div>
+                <div v-else-if="paymentStatus === 'failed'" class="status-failed">
+                  <span class="status-icon">❌</span>
+                  <span>支付失败，请重试</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button class="btn btn-secondary" @click="closePaymentModal">
+            取消
+          </button>
+          <button v-if="!qrCodeUrl" class="btn btn-primary" @click="generatePaymentQRCode" :disabled="!paymentMethod">
+            生成支付二维码
+          </button>
+        </div>
+      </div>
+    </div>
+
     <!-- API Key Modal -->
     <div v-if="showApiKeyModal" class="modal-overlay" @click="closeModal">
       <div class="modal" @click.stop>
@@ -317,7 +394,14 @@ export default {
       apiError: null,
       apiFactor: 1,
       apiDailyCost: 0,
-      apiDailyLimit: 0
+      apiDailyLimit: 0,
+      // Payment related
+      showPayment: false,
+      selectedPlan: null,
+      paymentMethod: 'alipay',
+      qrCodeUrl: null,
+      paymentStatus: null, // pending, success, failed
+      paymentCheckInterval: null
     }
   },
   mounted() {
@@ -516,6 +600,93 @@ export default {
       }
 
       this.closeModal()
+    },
+
+    // Payment methods
+    showPaymentModal(plan) {
+      this.selectedPlan = plan
+      this.showPayment = true
+      this.paymentMethod = 'alipay'
+      this.qrCodeUrl = null
+      this.paymentStatus = null
+    },
+
+    closePaymentModal() {
+      this.showPayment = false
+      this.selectedPlan = null
+      this.qrCodeUrl = null
+      this.paymentStatus = null
+      this.paymentMethod = 'alipay'
+      if (this.paymentCheckInterval) {
+        clearInterval(this.paymentCheckInterval)
+        this.paymentCheckInterval = null
+      }
+    },
+
+    async generatePaymentQRCode() {
+      if (!this.paymentMethod) {
+        alert('请选择支付方式')
+        return
+      }
+
+      try {
+        // 模拟生成支付二维码
+        // 实际项目中，这里应该调用后端 API
+        const amount = this.selectedPlan === 'plus' ? 99 : 199
+
+        // 这里应该调用真实的支付接口
+        // const response = await fetch('/api/payment/create', {
+        //   method: 'POST',
+        //   headers: { 'Content-Type': 'application/json' },
+        //   body: JSON.stringify({
+        //     plan: this.selectedPlan,
+        //     method: this.paymentMethod,
+        //     amount: amount
+        //   })
+        // })
+        // const data = await response.json()
+        // this.qrCodeUrl = data.qrCodeUrl
+
+        // 模拟二维码（演示用）
+        // 实际应用中应该从后端获取真实的支付二维码
+        this.qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(`${this.paymentMethod}://pay?amount=${amount}&plan=${this.selectedPlan}`)}`
+        this.paymentStatus = 'pending'
+
+        // 开始轮询支付状态
+        this.startPaymentStatusCheck()
+      } catch (error) {
+        console.error('生成支付二维码失败:', error)
+        alert('生成支付二维码失败，请稍后重试')
+      }
+    },
+
+    startPaymentStatusCheck() {
+      // 模拟支付状态检查
+      // 实际项目中应该调用后端 API 检查支付状态
+      this.paymentCheckInterval = setInterval(async () => {
+        try {
+          // const response = await fetch('/api/payment/check', {
+          //   method: 'POST',
+          //   headers: { 'Content-Type': 'application/json' },
+          //   body: JSON.stringify({ orderId: this.orderId })
+          // })
+          // const data = await response.json()
+          // if (data.status === 'success') {
+          //   this.paymentStatus = 'success'
+          //   clearInterval(this.paymentCheckInterval)
+          //   setTimeout(() => {
+          //     this.closePaymentModal()
+          //     this.currentPlan.type = this.selectedPlan
+          //     alert('支付成功！您的套餐已升级')
+          //   }, 2000)
+          // }
+
+          // 模拟支付成功（仅用于演示）
+          // 实际应用中需要真实的支付回调
+        } catch (error) {
+          console.error('检查支付状态失败:', error)
+        }
+      }, 3000)
     }
   }
 }
@@ -664,6 +835,8 @@ export default {
   transition: all 0.3s ease;
   display: inline-block;
   align-self: flex-start;
+  border: none;
+  cursor: pointer;
 }
 
 .plan-card.plus .upgrade-btn {
@@ -1289,6 +1462,200 @@ export default {
 
   .time-segment {
     font-size: 0.7rem;
+  }
+}
+
+/* Payment Modal Styles */
+.payment-modal {
+  max-width: 600px;
+}
+
+.payment-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+.plan-summary {
+  background: #f8f9fa;
+  padding: 1.5rem;
+  border-radius: 8px;
+}
+
+.plan-summary h4 {
+  color: #2C1810;
+  margin-bottom: 1rem;
+  font-size: 1.1rem;
+}
+
+.summary-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.75rem 0;
+  border-bottom: 1px solid #e9ecef;
+}
+
+.summary-item:last-child {
+  border-bottom: none;
+}
+
+.summary-item span {
+  color: #666;
+}
+
+.summary-item strong {
+  color: #2C1810;
+}
+
+.summary-item .price {
+  font-size: 1.5rem;
+  color: #D2691E;
+}
+
+.payment-methods h4 {
+  color: #2C1810;
+  margin-bottom: 1rem;
+  font-size: 1.1rem;
+}
+
+.payment-options {
+  display: flex;
+  gap: 1rem;
+}
+
+.payment-option {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem 1rem;
+  border: 2px solid #e9ecef;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  background: white;
+}
+
+.payment-option:hover {
+  border-color: #D2691E;
+  background: #faf8f5;
+}
+
+.payment-option.active {
+  border-color: #D2691E;
+  background: #faf8f5;
+  box-shadow: 0 4px 12px rgba(210, 105, 30, 0.15);
+}
+
+.payment-option input {
+  display: none;
+}
+
+.payment-icon {
+  font-size: 2rem;
+  margin-bottom: 0.5rem;
+}
+
+.payment-name {
+  font-weight: 600;
+  color: #2C1810;
+}
+
+.qr-code-section {
+  text-align: center;
+}
+
+.qr-code-section h4 {
+  color: #2C1810;
+  margin-bottom: 1.5rem;
+  font-size: 1.1rem;
+}
+
+.qr-code-container {
+  background: #f8f9fa;
+  padding: 2rem;
+  border-radius: 12px;
+  margin-bottom: 1.5rem;
+}
+
+.qr-code {
+  width: 200px;
+  height: 200px;
+  border: 4px solid white;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  margin-bottom: 1rem;
+}
+
+.qr-hint {
+  color: #666;
+  font-size: 0.9rem;
+  margin: 0;
+}
+
+.payment-status {
+  padding: 1rem;
+}
+
+.status-pending,
+.status-success,
+.status-failed {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  padding: 1rem;
+  border-radius: 8px;
+  font-weight: 600;
+}
+
+.status-pending {
+  background: #fff3cd;
+  color: #856404;
+}
+
+.status-success {
+  background: #d4edda;
+  color: #155724;
+}
+
+.status-failed {
+  background: #f8d7da;
+  color: #721c24;
+}
+
+.spinner {
+  width: 20px;
+  height: 20px;
+  border: 3px solid #f3f3f3;
+  border-top: 3px solid #856404;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.status-icon {
+  font-size: 1.5rem;
+}
+
+.btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+@media (max-width: 768px) {
+  .payment-options {
+    flex-direction: column;
+  }
+
+  .payment-option {
+    padding: 1.25rem;
   }
 }
 </style>

@@ -27,20 +27,20 @@
           <!-- Free Plan -->
           <div class="plan-card">
             <div class="plan-header">
-              <h3 class="plan-name">免费版</h3>
+              <h3 class="plan-name">FREE</h3>
               <div class="plan-price">
                 <span class="currency">¥</span>
                 <span class="amount">0</span>
                 <span class="period">/月</span>
               </div>
-              <p class="plan-desc">适合个人学习和小型项目</p>
+              <p class="plan-desc">体验 Claude Code 的基础功能</p>
             </div>
 
             <div class="plan-features">
               <h4>包含功能：</h4>
               <ul>
-                <li>✅ 每月 1,000 点积分</li>
-                <li>✅ Claude Haiku + Codex 基础模型</li>
+                <li>✅ 每日 3,000 点积分</li>
+                <li>✅ Claude Haiku 基础模型</li>
                 <li>✅ 基础IDE集成</li>
                 <li>✅ 社区支持</li>
                 <li>❌ 高级模型</li>
@@ -55,65 +55,65 @@
             </div>
           </div>
 
-          <!-- Pro Plan -->
+          <!-- Plus Plan -->
           <div class="plan-card featured">
-            <div class="popular-badge">最受欢迎</div>
+            <div class="popular-badge">推荐</div>
             <div class="plan-header">
-              <h3 class="plan-name">专业版</h3>
+              <h3 class="plan-name">PLUS</h3>
               <div class="plan-price">
                 <span class="currency">¥</span>
                 <span class="amount">99</span>
                 <span class="period">/月</span>
               </div>
-              <p class="plan-desc">适合专业开发者和小团队</p>
+              <p class="plan-desc">支持每日基础体验，轻度使用</p>
             </div>
 
             <div class="plan-features">
               <h4>包含功能：</h4>
               <ul>
-                <li>✅ 每月 10,000 点积分</li>
-                <li>✅ Claude Haiku/Sonnet + Codex 高级模型</li>
+                <li>✅ 每日 5,000 点积分</li>
+                <li>✅ Claude Haiku/Sonnet 模型</li>
                 <li>✅ 高级IDE集成</li>
                 <li>✅ 邮件支持</li>
-                <li>✅ 代码审查功能</li>
-                <li>✅ 团队协作 (最多5人)</li>
+                <li>✅ 代码补全功能</li>
+                <li>✅ 优先响应速度</li>
+              </ul>
+            </div>
+
+            <div class="plan-action">
+              <button class="btn btn-primary btn-full" @click="selectPlan('plus')">
+                选择 PLUS
+              </button>
+            </div>
+          </div>
+
+          <!-- Pro Plan -->
+          <div class="plan-card">
+            <div class="plan-header">
+              <h3 class="plan-name">PRO</h3>
+              <div class="plan-price">
+                <span class="currency">¥</span>
+                <span class="amount">199</span>
+                <span class="period">/月</span>
+              </div>
+              <p class="plan-desc">畅享 Claude 4.5 Sonnet 模型，满足日常开发</p>
+            </div>
+
+            <div class="plan-features">
+              <h4>包含功能：</h4>
+              <ul>
+                <li>✅ 每日 10,000 点积分</li>
+                <li>✅ Claude 4.5 Sonnet 模型</li>
+                <li>✅ 企业级集成</li>
+                <li>✅ 优先技术支持</li>
+                <li>✅ 高级代码审查</li>
+                <li>✅ 团队协作功能</li>
               </ul>
             </div>
 
             <div class="plan-action">
               <button class="btn btn-primary btn-full" @click="selectPlan('pro')">
-                选择专业版
-              </button>
-            </div>
-          </div>
-
-          <!-- Max Plan -->
-          <div class="plan-card">
-            <div class="plan-header">
-              <h3 class="plan-name">高级版</h3>
-              <div class="plan-price">
-                <span class="currency">¥</span>
-                <span class="amount">299</span>
-                <span class="period">/月</span>
-              </div>
-              <p class="plan-desc">适合大型团队和企业</p>
-            </div>
-
-            <div class="plan-features">
-              <h4>包含功能：</h4>
-              <ul>
-                <li>✅ 每月 50,000 点积分</li>
-                <li>✅ 全部Claude模型 + Codex系列</li>
-                <li>✅ 企业级集成</li>
-                <li>✅ 优先技术支持</li>
-                <li>✅ 高级分析报告</li>
-                <li>✅ 团队协作 (最多20人)</li>
-              </ul>
-            </div>
-
-            <div class="plan-action">
-              <button class="btn btn-primary btn-full" @click="selectPlan('max')">
-                选择高级版
+                选择 PRO
               </button>
             </div>
           </div>
