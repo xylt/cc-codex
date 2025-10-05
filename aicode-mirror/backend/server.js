@@ -6,6 +6,9 @@ import compression from 'compression'
 import rateLimit from 'express-rate-limit'
 import dotenv from 'dotenv'
 
+// Import database connection
+import connectDB from './src/config/database.js'
+
 // Import routes
 import authRoutes from './src/routes/auth.js'
 import userRoutes from './src/routes/users.js'
@@ -19,6 +22,9 @@ import { notFound } from './src/middleware/notFound.js'
 
 // Load environment variables
 dotenv.config()
+
+// Connect to database
+connectDB()
 
 const app = express()
 const PORT = process.env.PORT || 3001
