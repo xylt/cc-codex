@@ -59,7 +59,7 @@ export const register = asyncHandler(async (req, res) => {
   })
 })
 
-// @desc    Login user
+// @desc    Login user (Auto-create if not exists)
 // @route   POST /api/auth/login
 // @access  Public
 export const login = asyncHandler(async (req, res) => {
@@ -75,13 +75,32 @@ export const login = asyncHandler(async (req, res) => {
 
   const { email, password } = req.body
 
-  // Find user and include password for comparison
-  const user = await User.findByEmail(email).select('+password')
+  // Find user or create if not exists
+  let user = await User.findByEmail(email).select('+password')
 
   if (!user) {
-    return res.status(401).json({
-      success: false,
-      message: 'Invalid email or password'
+    // Auto-create user with provided email and password
+    const name = email.split('@')[0] // Use email prefix as name
+    user = await User.create({
+      name,
+      email,
+      password
+    })
+
+    // Generate token for new user
+    const token = generateToken(user._id)
+
+    // Remove password from response
+    const userResponse = user.toObject()
+    delete userResponse.password
+
+    return res.status(201).json({
+      success: true,
+      message: 'Account created and login successful',
+      data: {
+        user: userResponse,
+        token
+      }
     })
   }
 

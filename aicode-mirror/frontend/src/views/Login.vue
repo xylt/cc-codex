@@ -257,33 +257,66 @@ export default {
     },
 
     async login() {
-      // 模拟登录API调用
-      await new Promise(resolve => setTimeout(resolve, 1000))
+      try {
+        const response = await fetch('/api/auth/login', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            email: this.form.email,
+            password: this.form.password
+          })
+        })
 
-      // 模拟成功登录
-      const token = 'mock-jwt-token-' + Date.now()
-      localStorage.setItem('authToken', token)
-      localStorage.setItem('user', JSON.stringify({
-        email: this.form.email,
-        name: this.form.email.split('@')[0]
-      }))
+        const data = await response.json()
 
-      this.$router.push('/dashboard')
+        if (data.success) {
+          // 保存token和用户信息
+          localStorage.setItem('authToken', data.data.token)
+          localStorage.setItem('user', JSON.stringify(data.data.user))
+
+          // 跳转到仪表板
+          this.$router.push('/dashboard')
+        } else {
+          throw new Error(data.message || '登录失败')
+        }
+      } catch (error) {
+        console.error('Login error:', error)
+        throw error
+      }
     },
 
     async register() {
-      // 模拟注册API调用
-      await new Promise(resolve => setTimeout(resolve, 1500))
+      try {
+        const response = await fetch('/api/auth/register', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            name: this.form.name,
+            email: this.form.email,
+            password: this.form.password
+          })
+        })
 
-      // 模拟成功注册
-      const token = 'mock-jwt-token-' + Date.now()
-      localStorage.setItem('authToken', token)
-      localStorage.setItem('user', JSON.stringify({
-        email: this.form.email,
-        name: this.form.name
-      }))
+        const data = await response.json()
 
-      this.$router.push('/dashboard')
+        if (data.success) {
+          // 保存token和用户信息
+          localStorage.setItem('authToken', data.data.token)
+          localStorage.setItem('user', JSON.stringify(data.data.user))
+
+          // 跳转到仪表板
+          this.$router.push('/dashboard')
+        } else {
+          throw new Error(data.message || '注册失败')
+        }
+      } catch (error) {
+        console.error('Register error:', error)
+        throw error
+      }
     },
 
     handleError(error) {

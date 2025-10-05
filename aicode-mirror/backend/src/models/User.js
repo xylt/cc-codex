@@ -95,6 +95,17 @@ const userSchema = new mongoose.Schema({
     paymentMethod: String,
     apiKeyId: String
   },
+  apiKey: {
+    key: String,
+    keyPrefix: String,
+    keySuffix: String,
+    name: {
+      type: String,
+      default: 'My API Key'
+    },
+    createdAt: Date,
+    lastUsed: Date
+  },
   usage: {
     requests: {
       total: { type: Number, default: 0 },
@@ -152,6 +163,13 @@ userSchema.virtual('credits.usagePercentage').get(function() {
 // Virtual for account locked status
 userSchema.virtual('security.isLocked').get(function() {
   return !!(this.security.lockUntil && this.security.lockUntil > Date.now())
+})
+
+// Virtual for masked API key
+userSchema.virtual('apiKey.masked').get(function() {
+  if (!this.apiKey?.key) return null
+  const key = this.apiKey.key
+  return `${key.substring(0, 7)}${'*'.repeat(20)}${key.substring(key.length - 5)}`
 })
 
 // Index for performance
@@ -265,6 +283,20 @@ userSchema.statics.findByEmail = function(email) {
 // Static method to find active users
 userSchema.statics.findActive = function() {
   return this.find({ status: 'active' })
+}
+
+// Static method to generate API key
+userSchema.statics.generateApiKey = function() {
+  const crypto = require('crypto')
+  const prefix = 'ak'
+  const randomBytes = crypto.randomBytes(32).toString('hex')
+  const key = `${prefix}-${randomBytes}`
+
+  return {
+    key,
+    keyPrefix: key.substring(0, 7), // ak-1234
+    keySuffix: key.substring(key.length - 5) // last 5 chars
+  }
 }
 
 const User = mongoose.model('User', userSchema)

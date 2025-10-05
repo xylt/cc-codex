@@ -134,39 +134,41 @@
           <!-- API管理 Module -->
           <div class="api-management-section">
             <div class="section-title">
-              <h2>API管理</h2>
-              <button class="btn btn-primary btn-sm" @click="showApiKeyModal = true">
-                + 新建密钥
+              <h2>API密钥</h2>
+              <button v-if="!hasApiKey" class="btn btn-primary btn-sm" @click="showApiKeyModal = true">
+                设置密钥
+              </button>
+              <button v-else class="btn btn-secondary btn-sm" @click="showApiKeyModal = true">
+                重新生成
               </button>
             </div>
 
             <div class="api-keys-list">
-              <div v-if="apiKeys.length === 0" class="empty-state">
+              <div v-if="!hasApiKey" class="empty-state">
                 <div class="empty-icon">🔑</div>
-                <p>还没有API密钥</p>
+                <p>还没有设置API密钥</p>
+                <p class="hint">点击"设置密钥"按钮创建您的专属API密钥</p>
                 <button class="btn btn-primary" @click="showApiKeyModal = true">
-                  创建第一个密钥
+                  设置密钥
                 </button>
               </div>
 
-              <div v-for="key in apiKeys" :key="key.id" class="api-key-item">
+              <div v-else class="api-key-item">
                 <div class="key-info">
-                  <div class="key-name">{{ key.name }}</div>
+                  <div class="key-name">{{ apiKeyData.name }}</div>
                   <div class="key-value">
-                    <code>{{ key.masked }}</code>
-                    <button class="copy-btn" @click="copyApiKey(key.value)">
+                    <code>{{ apiKeyData.masked }}</code>
+                    <button class="copy-btn" @click="copyApiKey(apiKeyData.key)">
                       📋
                     </button>
                   </div>
                   <div class="key-meta">
-                    创建于 {{ formatDate(key.createdAt) }} · 最后使用 {{ formatTime(key.lastUsed) }}
+                    创建于 {{ formatDate(apiKeyData.createdAt) }}
+                    <span v-if="apiKeyData.lastUsed">· 最后使用 {{ formatTime(apiKeyData.lastUsed) }}</span>
                   </div>
                 </div>
                 <div class="key-actions">
-                  <button class="btn-icon" @click="editApiKey(key)" title="编辑">
-                    ✏️
-                  </button>
-                  <button class="btn-icon danger" @click="deleteApiKey(key)" title="删除">
+                  <button class="btn-icon danger" @click="deleteApiKey()" title="删除">
                     🗑️
                   </button>
                 </div>
@@ -305,11 +307,16 @@
     <div v-if="showApiKeyModal" class="modal-overlay" @click="closeModal">
       <div class="modal" @click.stop>
         <div class="modal-header">
-          <h3>{{ editingKey ? '编辑API密钥' : '创建API密钥' }}</h3>
+          <h3>{{ hasApiKey ? '重新生成API密钥' : '设置API密钥' }}</h3>
           <button class="close-btn" @click="closeModal">×</button>
         </div>
 
         <div class="modal-body">
+          <div v-if="hasApiKey" class="warning-message">
+            <p>⚠️ 重新生成密钥将使旧密钥失效</p>
+            <p>请确保更新所有使用该密钥的应用</p>
+          </div>
+
           <div class="form-group">
             <label>密钥名称</label>
             <input
@@ -320,38 +327,26 @@
             >
           </div>
 
-          <div class="form-group">
-            <label>权限设置</label>
-            <div class="permissions">
-              <label class="checkbox">
-                <input type="checkbox" v-model="keyForm.permissions.read">
-                <span class="checkmark"></span>
-                读取权限
-              </label>
-              <label class="checkbox">
-                <input type="checkbox" v-model="keyForm.permissions.write">
-                <span class="checkmark"></span>
-                写入权限
-              </label>
+          <div v-if="newGeneratedKey" class="generated-key-section">
+            <div class="success-message">
+              <p>✅ 密钥已生成成功！</p>
+              <p class="warning">请立即复制保存，关闭后将无法再次查看完整密钥</p>
             </div>
-          </div>
-
-          <div class="form-group">
-            <label>使用限制</label>
-            <select v-model="keyForm.rateLimit">
-              <option value="1000">1000 请求/小时</option>
-              <option value="5000">5000 请求/小时</option>
-              <option value="unlimited">无限制</option>
-            </select>
+            <div class="key-display">
+              <code>{{ newGeneratedKey }}</code>
+              <button class="copy-btn" @click="copyApiKey(newGeneratedKey)">
+                📋 复制
+              </button>
+            </div>
           </div>
         </div>
 
         <div class="modal-footer">
           <button class="btn btn-secondary" @click="closeModal">
-            取消
+            {{ newGeneratedKey ? '关闭' : '取消' }}
           </button>
-          <button class="btn btn-primary" @click="saveApiKey">
-            {{ editingKey ? '保存' : '创建' }}
+          <button v-if="!newGeneratedKey" class="btn btn-primary" @click="generateApiKey">
+            {{ hasApiKey ? '重新生成' : '生成密钥' }}
           </button>
         </div>
       </div>
@@ -379,25 +374,18 @@ export default {
       },
       rechargeRate: 0,
       lastRechargeTime: '2025-09-01 14:00:00',
-      apiKeys: [
-        {
-          id: 1,
-          name: '测试数据密钥',
-          value: 'cr_5d99ac41ab9251b0730e64f7714f75e08e1d9c9651deecffae8de6d36969365b',
-          masked: 'cr_5d99...9365b',
-          createdAt: Date.now(),
-          lastUsed: Date.now()
-        }
-      ],
-      showApiKeyModal: false,
-      editingKey: null,
-      keyForm: {
+      hasApiKey: false,
+      apiKeyData: {
         name: '',
-        permissions: {
-          read: true,
-          write: true
-        },
-        rateLimit: '1000'
+        key: '',
+        masked: '',
+        createdAt: null,
+        lastUsed: null
+      },
+      showApiKeyModal: false,
+      newGeneratedKey: null,
+      keyForm: {
+        name: 'My API Key'
       },
       // Remote stats (pseudo-data filled via API)
       fetchingStats: false,
@@ -418,6 +406,7 @@ export default {
   mounted() {
     this.loadUserData()
     this.fetchUsageStats()
+    this.loadApiKey()
   },
   methods: {
     async fetchUsageStats() {
@@ -558,68 +547,113 @@ export default {
       })
     },
 
-    editApiKey(key) {
-      this.editingKey = key
-      this.keyForm = {
-        name: key.name,
-        permissions: { ...key.permissions },
-        rateLimit: key.rateLimit || '1000'
-      }
-      this.showApiKeyModal = true
-    },
+    async loadApiKey() {
+      try {
+        const token = localStorage.getItem('authToken')
+        if (!token) return
 
-    deleteApiKey(key) {
-      if (confirm('确定要删除这个API密钥吗？此操作不可撤销。')) {
-        this.apiKeys = this.apiKeys.filter(k => k.id !== key.id)
-      }
-    },
+        const response = await fetch('/api/api-keys', {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        })
 
-    closeModal() {
-      this.showApiKeyModal = false
-      this.editingKey = null
-      this.keyForm = {
-        name: '',
-        permissions: {
-          read: true,
-          write: true
-        },
-        rateLimit: '1000'
+        const data = await response.json()
+        if (data.success && data.data.hasApiKey) {
+          this.hasApiKey = true
+          this.apiKeyData = {
+            name: data.data.apiKey.name,
+            key: '', // 不显示完整key
+            masked: data.data.apiKey.masked,
+            createdAt: data.data.apiKey.createdAt,
+            lastUsed: data.data.apiKey.lastUsed
+          }
+        }
+      } catch (error) {
+        console.error('Failed to load API key:', error)
       }
     },
 
-    saveApiKey() {
+    async generateApiKey() {
       if (!this.keyForm.name.trim()) {
         alert('请输入密钥名称')
         return
       }
 
-      if (this.editingKey) {
-        // 编辑现有密钥
-        const index = this.apiKeys.findIndex(k => k.id === this.editingKey.id)
-        if (index !== -1) {
-          this.apiKeys[index] = {
-            ...this.apiKeys[index],
-            name: this.keyForm.name,
-            permissions: { ...this.keyForm.permissions },
-            rateLimit: this.keyForm.rateLimit
+      try {
+        const token = localStorage.getItem('authToken')
+        const response = await fetch('/api/api-keys', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({
+            name: this.keyForm.name
+          })
+        })
+
+        const data = await response.json()
+        if (data.success) {
+          this.newGeneratedKey = data.data.apiKey.key
+          this.hasApiKey = true
+          this.apiKeyData = {
+            name: data.data.apiKey.name,
+            key: data.data.apiKey.key,
+            masked: data.data.apiKey.masked,
+            createdAt: data.data.apiKey.createdAt,
+            lastUsed: null
           }
+          alert('API密钥生成成功！请立即复制保存')
+        } else {
+          alert('生成失败：' + data.message)
         }
-      } else {
-        // 创建新密钥
-        const newKey = {
-          id: Date.now(),
-          name: this.keyForm.name,
-          value: 'ak-' + Math.random().toString(36).substr(2, 30),
-          masked: 'ak-' + Math.random().toString(36).substr(2, 4) + '...' + Math.random().toString(36).substr(2, 4),
-          createdAt: Date.now(),
-          lastUsed: null,
-          permissions: { ...this.keyForm.permissions },
-          rateLimit: this.keyForm.rateLimit
-        }
-        this.apiKeys.push(newKey)
+      } catch (error) {
+        console.error('Failed to generate API key:', error)
+        alert('生成API密钥失败')
+      }
+    },
+
+    async deleteApiKey() {
+      if (!confirm('确定要删除API密钥吗？此操作不可撤销，删除后所有使用该密钥的应用将无法访问。')) {
+        return
       }
 
-      this.closeModal()
+      try {
+        const token = localStorage.getItem('authToken')
+        const response = await fetch('/api/api-keys', {
+          method: 'DELETE',
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        })
+
+        const data = await response.json()
+        if (data.success) {
+          this.hasApiKey = false
+          this.apiKeyData = {
+            name: '',
+            key: '',
+            masked: '',
+            createdAt: null,
+            lastUsed: null
+          }
+          alert('API密钥已删除')
+        } else {
+          alert('删除失败：' + data.message)
+        }
+      } catch (error) {
+        console.error('Failed to delete API key:', error)
+        alert('删除API密钥失败')
+      }
+    },
+
+    closeModal() {
+      this.showApiKeyModal = false
+      this.newGeneratedKey = null
+      this.keyForm = {
+        name: 'My API Key'
+      }
     },
 
     // Payment methods
@@ -1222,9 +1256,82 @@ export default {
   color: #666;
 }
 
+.empty-state .hint {
+  color: #999;
+  font-size: 0.9rem;
+  margin-top: 0.5rem;
+}
+
 .empty-icon {
   font-size: 4rem;
   margin-bottom: 1rem;
+}
+
+.warning-message {
+  background: #fff3cd;
+  border: 1px solid #ffc107;
+  border-radius: 8px;
+  padding: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.warning-message p {
+  margin: 0.25rem 0;
+  color: #856404;
+  font-size: 0.9rem;
+}
+
+.generated-key-section {
+  margin-top: 1.5rem;
+  padding: 1rem;
+  background: #f8f9fa;
+  border-radius: 8px;
+}
+
+.success-message {
+  margin-bottom: 1rem;
+}
+
+.success-message p {
+  margin: 0.25rem 0;
+  color: #155724;
+}
+
+.success-message .warning {
+  color: #856404;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.key-display {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: white;
+  padding: 1rem;
+  border-radius: 6px;
+  border: 1px solid #dee2e6;
+}
+
+.key-display code {
+  flex: 1;
+  font-family: 'Monaco', 'Menlo', monospace;
+  font-size: 0.9rem;
+  word-break: break-all;
+}
+
+.key-display .copy-btn {
+  padding: 0.5rem 1rem;
+  background: #007aff;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.key-display .copy-btn:hover {
+  background: #005fb8;
 }
 
 .api-key-item {
